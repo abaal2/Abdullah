@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Catch Me Weather Form</title>
+<style>
+  body {
+    background: linear-gradient(to bottom right, #0033cc, #99ccff);
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 0;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+
+  .slider-container {
+    background-color: #000080;
+    color: white;
+    padding: 10px;
+    margin-bottom: 20px;
+  }
+
+  .slider img {
+    width: 400px;
+    height: 250px;
+    object-fit: cover;
+    border: 2px solid white;
+    border-radius: 8px;
+  }
+
+  form {
+    margin: 20px auto;
+    background: rgba(255, 255, 255, 0.95);
+    display: inline-block;
+    padding: 20px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    position: relative;
+  }
+
+  .moveable {
+    display: inline-block;
+    margin: 5px;
+    padding-left: 25px;
+    position: relative;
+    cursor: pointer;
+  }
+
+  .moveable input {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    cursor: pointer;
+  }
+
+  input[type="text"], select {
+    width: 80%;
+    padding: 8px;
+    margin: 10px 0;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+  }
+
+  input[type="submit"] {
+    margin-top: 10px;
+    padding: 10px 20px;
+    background-color: #0044cc;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  input[type="submit"]:hover {
+    background-color: #003399;
+  }
+
+  #fireworksCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 1000;
+    width: 100vw;
+    height: 100vh;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="fireworksCanvas"></canvas>
+
+<div class="slider-container">
+  <h2>Catch the Weather Options!</h2>
+  <div class="slider">
+    <img id="sliderImage" src="https://picsum.photos/id/1015/400/250" alt="Weather" />
+  </div>
+</div>
+
+<form id="orderForm" method="post">
+  <label>Enter your Name:</label><br />
+  <input type="text" name="name" required /><br />
+
+  <label>Choose the temp:</label><br />
+  <label class="moveable"><input type="radio" name="taste" value="Hot" required /> Hot</label>
+  <label class="moveable"><input type="radio" name="taste" value="Cold" /> Cold</label>
+  <label class="moveable"><input type="radio" name="taste" value="Normal" /> Normal</label><br />
+
+  <label>Choose the weather:</label><br />
+  <label class="moveable"><input type="radio" name="size" value="Rainy" required /> Rainy</label>
+  <label class="moveable"><input type="radio" name="size" value="No Rain" /> No Rain</label><br />
+
+  <label>Choose the mode of time:</label><br />
+  <select name="delivery" required>
+    <option value="Same day">Same day</option>
+    <option value="Extra day">Extra day</option>
+  </select><br />
+
+  <input type="submit" value="Submit" />
+</form>
+
+<script>
+  // Slider images
+  const images = [
+    "https://picsum.photos/id/1015/400/250",
+    "https://picsum.photos/id/1025/400/250",
+    "https://picsum.photos/id/1035/400/250",
+  ];
+  let index = 0;
+  const sliderImage = document.getElementById("sliderImage");
+  setInterval(() => {
+    index = (index + 1) % images.length;
+    sliderImage.src = images[index];
+  }, 3000);
+
+  // Moveable inputs — small jumps only 2 times
+  const moveables = document.querySelectorAll(".moveable");
+  moveables.forEach(label => {
+    label.dataset.moves = "0";
+    label.addEventListener("mouseenter", () => {
+      const input = label.querySelector("input");
+      if (input.checked || parseInt(label.dataset.moves) >= 2) return;
+
+      const offsetX = (Math.random() - 0.5) * 30; // small jump
+      const offsetY = (Math.random() - 0.5) * 30;
+
+      label.style.position = "relative";
+      label.style.transition = "transform 0.3s ease";
+      label.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+
+      label.dataset.moves = (parseInt(label.dataset.moves) + 1).toString();
+    });
+    label.addEventListener("click", () => {
+      label.style.transform = "translate(0, 0)";
+    });
+  });
+
+  // Fireworks setup
+  const canvas = document.getElementById("fireworksCanvas");
+  const ctx = canvas.getContext("2d");
+  let cw = canvas.width = window.innerWidth;
+  let ch = canvas.height = window.innerHeight;
+
+  window.addEventListener("resize", () => {
+    cw = canvas.width = window.innerWidth;
+    ch = canvas.height = window.innerHeight;
+  });
+
+  class Particle {
+    constructor(x, y, color) {
+      this.x = x;
+      this.y = y;
+      this.color = color;
+      this.radius = Math.random() * 3 + 2;
+      this.life = 100;
+      this.velocity = {
+        x: (Math.random() - 0.5) * 5,
+        y: (Math.random() - 0.5) * 5,
+      };
+      this.gravity = 0.05;
+    }
+
+    update() {
+      this.velocity.y += this.gravity;
+      this.x += this.velocity.x;
+      this.y += this.velocity.y;
+      this.life--;
+      this.radius *= 0.96;
+    }
+
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fillStyle = this.color;
+      ctx.shadowColor = this.color;
+      ctx.shadowBlur = 10;
+      ctx.fill();
+    }
+  }
+
+  let particles = [];
+  function randomColor() {
+    const colors = ["#ff0043", "#14fc56", "#1e90ff", "#fffc33", "#ff7f00"];
+    return colors[Math.floor(Math.random() * colors.length)];
+  }
+
+  function createFirework() {
+    const x = Math.random() * cw * 0.8 + cw * 0.1;
+    const y = Math.random() * ch * 0.5 + ch * 0.1;
+    const count = 30 + Math.floor(Math.random() * 20);
+    const color = randomColor();
+
+    for (let i = 0; i < count; i++) {
+      particles.push(new Particle(x, y, color));
+    }
+  }
+
+  function animateFireworks() {
+    ctx.clearRect(0, 0, cw, ch);
+    particles.forEach((p, i) => {
+      p.update();
+      p.draw();
+      if (p.life <= 0 || p.radius < 0.5) {
+        particles.splice(i, 1);
+      }
+    });
+    requestAnimationFrame(animateFireworks);
+  }
+
+  // Handle form submission with 5 "Are you sure?" dialogs
+  const form = document.getElementById("orderForm");
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    let confirmCount = 0;
+
+    function askAgain() {
+      if (confirmCount < 5) {
+        if (confirm("Are you sure?")) {
+          confirmCount++;
+          askAgain();
+        } else {
+          return;
+        }
+      } else {
+        // Start fireworks
+        setInterval(createFirework, 700);
+        animateFireworks();
+        alert("✅ Order Submitted with Fireworks!");
+      }
+    }
+
+    askAgain();
+  });
+</script>
+</body>
+</html>
